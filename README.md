@@ -1,5 +1,8 @@
 # PromptHash Stellar
 
+[![Deploy provenance](https://github.com/PromptMintLabs/prompt-mint/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/PromptMintLabs/prompt-mint/actions/workflows/deploy.yml)
+[![SLSA provenance: attested](https://img.shields.io/badge/provenance-SLSA%20attested%20%C2%B7%20cosign%20signed-2ea44f?logo=sigstore)](docs/artifact-verification.md#verified-deployment-provenance-badge)
+
 PromptHash Stellar is a Soroban-based marketplace for selling reusable AI prompt licenses with XLM payments and wallet-verified unlocks.
 
 ## Overview
@@ -266,6 +269,14 @@ The current contract data model includes:
 
 ### Install dependencies
 
+New contributors can do the whole setup with one command. It installs dependencies, creates `.env`, and validates the setup:
+
+```bash
+node scripts/bootstrap.mjs   # add --dry-run to preview, --skip-rust for frontend-only work
+```
+
+Or install manually:
+
 ```bash
 yarn install
 cd server && npm install && cd ..
@@ -317,6 +328,9 @@ yarn lint
 yarn test:frontend --run api/prompts/unlock.test.ts src/lib/auth/challenge.test.ts src/lib/crypto/promptCrypto.test.ts
 yarn build
 ```
+
+For a map of the repository and its ownership boundaries, see the
+[Monorepo Map](docs/monorepo-map.md).
 
 For a timed zero-to-working setup with a first Soroban contract interaction,
 see the [Developer Quickstart](docs/developer-quickstart.md).

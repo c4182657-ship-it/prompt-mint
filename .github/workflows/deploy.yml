@@ -198,9 +198,23 @@ jobs:
           name: frontend-checksums-${{ github.sha }}
           path: ./artifacts
 
+      - name: Generate deploy manifest
+        # Paths are flat basenames so the manifest verifies against a
+        # `gh release download` directory. See docs/deploy-manifest.md.
+        run: |
+          mkdir -p manifest-staging
+          cp ./artifacts/wasm/*.wasm ./artifacts/frontend-checksums.txt manifest-staging/
+          cd manifest-staging
+          node ../scripts/deploy-manifest.mjs generate \
+            --network release \
+            --wasm prompt_hash.wasm \
+            --artifact frontend-checksums.txt \
+            --out ../artifacts/deploy-manifest.json
+
       - name: Create combined checksum manifest
         run: |
           cat ./artifacts/wasm-checksums.txt ./artifacts/frontend-checksums.txt > ./artifacts/release-checksums.txt
+          (cd ./artifacts && sha256sum deploy-manifest.json) >> ./artifacts/release-checksums.txt
           echo "" >> ./artifacts/release-checksums.txt
           echo "# Release ${{ github.sha }}" >> ./artifacts/release-checksums.txt
           echo "# Build timestamp: $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> ./artifacts/release-checksums.txt
@@ -240,6 +254,8 @@ jobs:
             ./artifacts/release-checksums.txt
             ./artifacts/release-checksums.txt.sha256
             ./artifacts/release-checksums.txt.sig
+            ./artifacts/deploy-manifest.json
+            ./artifacts/frontend-checksums.txt
             ./artifacts/wasm/*.wasm
             ./artifacts/wasm/*.wasm.sig
           retention-days: 90
@@ -332,6 +348,28 @@ jobs:
           name: sbom-${{ github.sha }}
           path: ./sbom
 
+      - name: Set up cosign
+        uses: sigstore/cosign-installer@v3
+        with:
+          cosign-release: 'v2.4.3'
+
+      # Gate the release on provenance: the deploy workflow badge in README and
+      # docs/artifact-verification.md is only green when this step passes.
+      - name: Verify deployment provenance
+        run: |
+          set -euo pipefail
+          mkdir -p flat
+          find signed-release -type f -exec cp {} flat/ \;
+          cosign verify-blob \
+            --bundle flat/release-checksums.txt.sig \
+            --certificate-identity "https://github.com/${{ github.repository }}/.github/workflows/deploy.yml@${{ github.ref }}" \
+            --certificate-oidc-issuer "https://token.actions.githubusercontent.com" \
+            flat/release-checksums.txt
+          (cd flat && grep ' deploy-manifest.json$' release-checksums.txt | sha256sum -c -)
+          node scripts/deploy-manifest.mjs verify --manifest flat/deploy-manifest.json --root flat
+          node scripts/deploy-manifest.mjs badge --manifest flat/deploy-manifest.json --root flat \
+            --out signed-release/provenance-badge.json
+
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
         with:
@@ -342,9 +380,10 @@ jobs:
 
             - Frontend deployed to Vercel production
             - Signed WASM + checksum artifacts
+            - `deploy-manifest.json` with artifact hashes (verified before publishing)
             - SBOM attached when available
 
-            See [artifact-verification.md](./docs/artifact-verification.md).
+            See [artifact-verification.md](./docs/artifact-verification.md) and [deploy-manifest.md](./docs/deploy-manifest.md).
           draft: false
           prerelease: false
           files: |

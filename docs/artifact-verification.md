@@ -1,5 +1,8 @@
 # Artifact Verification
 
+[![Deploy provenance](https://github.com/PromptMintLabs/prompt-mint/actions/workflows/deploy.yml/badge.svg?branch=main)](https://github.com/PromptMintLabs/prompt-mint/actions/workflows/deploy.yml)
+[![SLSA provenance: attested](https://img.shields.io/badge/provenance-SLSA%20attested%20%C2%B7%20cosign%20signed-2ea44f?logo=sigstore)](#verified-deployment-provenance-badge)
+
 Every release artifact published by PromptHash is checksummed, cryptographically signed, and bound to the source commit and workflow identity via SLSA provenance attestations. This document explains how to verify that artifacts have not been tampered with.
 
 ## Artifacts Per Release
@@ -11,6 +14,8 @@ Every release artifact published by PromptHash is checksummed, cryptographically
 | `release-checksums.txt.sha256` | SHA256 of the manifest itself |
 | `release-checksums.txt.sig` | Cosign signature bundle for the manifest |
 | `*.wasm.sig` | Cosign signature bundle per WASM file |
+| `deploy-manifest.json` | Hashes of the deployed artifacts, commit, and run ID (see [Deploy Manifest](./deploy-manifest.md)) |
+| `provenance-badge.json` | shields.io endpoint badge written after the provenance check passes |
 | SLSA provenance | Attestation published by `actions/attest-build-provenance` |
 
 ## Prerequisites
@@ -111,4 +116,32 @@ The signing and attestation steps run automatically in the `deploy.yml` workflow
 
 1. `contract-build` job: Builds WASM, generates checksums
 2. `sign-artifacts` job: Downloads artifacts, creates manifest, signs with cosign, generates SLSA provenance
-3. `create-release` job: Verifies signatures, publishes GitHub Release with all signed artifacts and attestations
+3. `create-release` job: Verifies signatures and the deploy manifest, then publishes a GitHub Release with all signed artifacts and attestations
+
+## Verified Deployment Provenance Badge
+
+The README and this page show two badges:
+
+| Badge | Source | Meaning |
+|---|---|---|
+| **Deploy provenance** | Live status of `.github/workflows/deploy.yml` on `main` | Green only when the latest deploy run built, signed, attested, **and** verified its artifacts |
+| **SLSA provenance** | Static shields.io badge | Links here. Every release carries a cosign signature and an `actions/attest-build-provenance` attestation |
+
+The live badge means something because of the **Verify deployment provenance** step in the `create-release` job. That step runs before the release is published and fails the workflow if any check fails:
+
+1. `cosign verify-blob` checks `release-checksums.txt` against the exact workflow identity (`deploy.yml@refs/heads/main`).
+2. `sha256sum -c` checks `deploy-manifest.json` against its signed line in `release-checksums.txt`.
+3. `node scripts/deploy-manifest.mjs verify` re-hashes every artifact that the manifest lists.
+4. `node scripts/deploy-manifest.mjs badge` writes `provenance-badge.json`, which is published with the release.
+
+A red badge means the latest deploy could not prove where its artifacts came from. Do not promote or pin that release until the failing step is fixed. For recovery steps, see [Deployment runbook](./operations/deployment-runbook.md).
+
+### Per-release endpoint badge
+
+Forks and dashboards that want a badge for one specific release can serve `provenance-badge.json` through the [shields.io endpoint badge](https://shields.io/badges/endpoint-badge):
+
+```text
+https://img.shields.io/endpoint?url=<url-encoded link to provenance-badge.json>
+```
+
+Its message reads `verified · <short sha>` (green) or `unverified` (red).

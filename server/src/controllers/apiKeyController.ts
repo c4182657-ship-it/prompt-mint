@@ -160,3 +160,26 @@ export const RevokeApiKey = asyncRoute(async (req, res) => {
   res.json({ key: serialize(existing) });
 });
 
+/** PATCH /api-keys/:id/scopes — update scopes for an active key. */
+export const UpdateApiKeyScopes = asyncRoute(async (req, res) => {
+  await connectDb();
+  const owner = requireOwner(req.body?.ownerWallet);
+  const scopesInput: unknown = req.body?.scopes;
+  const scopes: ApiScope[] = Array.isArray(scopesInput)
+    ? scopesInput.filter((s): s is ApiScope => isValidScope(String(s)))
+    : [];
+  if (scopes.length === 0) {
+    throw new AppError("At least one valid scope is required.", 400, "BAD_SCOPE");
+  }
+
+  const existing = await ApiKey.findOne({ _id: req.params.id, ownerWallet: owner });
+  if (!existing || existing.revoked) {
+    throw new AppError("Key not found or revoked.", 404, "KEY_NOT_FOUND");
+  }
+
+  existing.scopes = scopes;
+  await existing.save();
+
+  res.json({ key: serialize(existing) });
+});
+

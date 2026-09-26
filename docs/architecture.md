@@ -2,7 +2,7 @@
 
 ## System Components
 
-PromptHash Stellar is organized into three main layers.
+PromptHash Stellar is organized into three main layers. For the directory-level view, including who owns each directory, which directories may import from which, and which CI workflow gates each one, see the [Monorepo Map & Ownership Boundaries](./monorepo-map.md).
 
 ## 1. Soroban Contract Layer
 

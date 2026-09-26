@@ -139,16 +139,149 @@ console.log(top); // [{ promptId, upvotes }, ...]
 
 Full OpenAPI spec: [docs/api-reference.md](./api-reference.md)
 
+For concise gotcha-focused guidance on rate limits, error recovery, the unlock
+flow, idempotency, and webhook verification, see the
+[Public API Survival Guide](./public-api-survival-guide.md).
+
+---
+
+## Testing your integration with mock responses
+
+`@prompthash/sdk` ships a `Mocks` namespace with pre-built fixture factories
+for every public API response shape. Use them to unit-test your integration
+code without a live server or real network calls.
+
+```bash
+npm install @prompthash/sdk
+```
+
+```typescript
+import { Mocks } from "@prompthash/sdk";
+
+// Build individual fixtures
+const p = Mocks.prompt({ id: "7", priceXlm: 5 });
+const challenge = Mocks.challengeResponse();
+const unlock = Mocks.unlockResponse();
+const err = Mocks.apiError("RATE_LIMIT_IP", { reset: Date.now() + 60_000 });
+const headers = Mocks.rateLimitHeaders(0); // remaining = 0
+
+// Build a list response
+const page = Mocks.listPromptsResponse({ prompts: [{ id: "1" }, { id: "2" }] });
+
+// Build webhook payloads for handler testing
+const purchased = Mocks.promptPurchasedWebhook();
+const created = Mocks.promptCreatedWebhook({ deliveryId: "d-test-1" });
+```
+
+All factories accept a partial override object — supply only the fields your
+test cares about and the rest are filled with safe, deterministic defaults.
+The `integrityVerified` flag on `unlockResponse` and `unlockIntegrityFailure`
+lets you test the path where content delivery must be blocked:
+
+```typescript
+// Test the integrity-failure path
+const badUnlock = Mocks.unlockIntegrityFailure();
+expect(badUnlock.integrityVerified).toBe(false);
+// Your handler must NOT expose badUnlock.plaintext to the user
+```
+
+See the [Mock Responses Library reference](./mock-responses-library.md) for
+the complete factory list and the `MockErrorCode` table.
+
+---
+
+## Server-Side SDKs
+
+Backend integrations (API-key auth, idempotent writes, webhook verification) use the server SDKs instead of the browser SDK above:
+
+| Language | Package | Location |
+|---|---|---|
+| TypeScript | `@prompthash/server-sdk` | [`packages/server-sdk`](../packages/server-sdk) |
+| Python | `prompthash-server-sdk` | [`packages/server-sdk-python`](../packages/server-sdk-python) |
+| Go | `github.com/PromptMintLabs/prompt-mint/packages/server-sdk-go` | [`packages/server-sdk-go`](../packages/server-sdk-go) |
+| Rust | `prompthash-server-sdk` | [`packages/server-sdk-rust`](../packages/server-sdk-rust) |
+
+All four share the same surface: `Authorization: Bearer pm_<prefix>_<secret>` (or `X-Api-Key`), `Accept-Version` negotiation, `Idempotency-Key` on state-changing calls, typed errors with a `code`, bounded retry with backoff on `429`/`5xx`, and constant-time HMAC-SHA256 verification of the `X-PromptHash-Signature` webhook header.
+
+```typescript
+import { PromptHashServerClient } from "@prompthash/server-sdk";
+
+const client = new PromptHashServerClient({
+  baseUrl: "https://api.promptmint.io",
+  apiKey: process.env.PROMPTMINT_API_KEY,
+});
+
+const page = await client.listPrompts({ page: 1, limit: 20 });
+const registration = await client.registerWebhook({
+  walletAddress: "GB7...XYZ",
+  url: "https://example.com/hooks/prompthash",
+  events: ["PromptPurchased"],
+});
+// registration.secret is shown once — store it for verification.
+```
+
+```python
+from prompthash_server_sdk import PromptHashClient
+
+client = PromptHashClient(base_url="https://api.promptmint.io", api_key="pm_...")
+page = client.list_prompts(page=1, limit=20)
+registration = client.register_webhook(
+    wallet_address="GB7...XYZ",
+    url="https://example.com/hooks/prompthash",
+    events=["PromptPurchased"],
+)
+```
+
+```go
+client, err := prompthash.NewClient(prompthash.Config{
+    BaseURL: "https://api.promptmint.io",
+    APIKey:  os.Getenv("PROMPTMINT_API_KEY"),
+})
+if err != nil {
+    log.Fatal(err)
+}
+
+page, err := client.ListPrompts(ctx, prompthash.ListPromptsParams{Page: 1, Limit: 20})
+registration, err := client.RegisterWebhook(ctx, prompthash.RegisterWebhookParams{
+    WalletAddress: "GB7...XYZ",
+    URL:           "https://example.com/hooks/prompthash",
+    Events:        []string{"PromptPurchased"},
+})
+```
+
+```rust
+use prompthash_server_sdk::{Client, ClientConfig, RegisterWebhookParams};
+
+let client = Client::new(ClientConfig {
+    base_url: "https://api.promptmint.io".to_string(),
+    api_key: Some(std::env::var("PROMPTMINT_API_KEY").unwrap_or_default()),
+    ..Default::default()
+})?;
+
+let page = client.list_prompts(Default::default())?;
+let registration = client.register_webhook(RegisterWebhookParams {
+    wallet_address: "GB7...XYZ".to_string(),
+    url: "https://example.com/hooks/prompthash".to_string(),
+    events: Some(vec!["PromptPurchased".to_string()]),
+})?;
+// registration.secret is shown once — store it for verification.
+```
+
 ---
 
 ## Error Handling
 
-All SDK methods throw typed errors. The REST API returns `{ error: string }` with appropriate HTTP status codes:
+All SDK methods throw typed errors carrying the machine-readable `code` the server returned. The REST API returns `{ error: string }` (plus `code` when available) with the appropriate HTTP status:
 
-- `400` — Missing or invalid parameters
-- `403` — Not authorised (e.g. non-buyer attempting to vote)
-- `404` — Resource not found
-- `409` — Conflict (e.g. duplicate vote)
+- `400` — Missing or invalid parameters (`MISSING_FIELDS`, `INVALID_INPUT`, `UNSUPPORTED_VERSION`)
+- `401` — Authentication failed (`INVALID_SIGNATURE`, invalid API key)
+- `403` — Not authorised (e.g. non-buyer attempting to vote, `ACCESS_NOT_PURCHASED`)
+- `404` — Resource not found (`NOT_FOUND`)
+- `409` — Conflict (e.g. duplicate vote, idempotency replay)
+- `429` — Rate limited (`RATE_LIMIT_IP`, `RATE_LIMIT_WALLET`); honour `reset`
+- `5xx` — Transient or configuration failure; retry with backoff unless the code is `INTEGRITY_FAILURE`
+
+See the [SDK error-code reference card](./sdk-error-codes.md) for the complete table, retry policy, and envelope shapes.
 
 ---
 

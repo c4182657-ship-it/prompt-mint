@@ -1,0 +1,69 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://promptmintlabs.dev/schemas/address-book.schema.json",
+  "title": "Prompt Mint contract address book",
+  "type": "object",
+  "required": ["schemaVersion", "updatedAt", "contracts"],
+  "additionalProperties": false,
+  "properties": {
+    "schemaVersion": {
+      "type": "integer",
+      "const": 1
+    },
+    "updatedAt": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "contracts": {
+      "type": "object",
+      "minProperties": 1,
+      "additionalProperties": {
+        "type": "object",
+        "additionalProperties": {
+          "$ref": "#/$defs/environmentEntry"
+        }
+      }
+    }
+  },
+  "$defs": {
+    "environmentEntry": {
+      "type": "object",
+      "required": [
+        "contractId",
+        "network",
+        "rpcUrl",
+        "networkPassphrase",
+        "wasmHash",
+        "source",
+        "deployedAt"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "contractId": {
+          "type": "string",
+          "description": "Stellar contract ID. Empty string is allowed for environments that have not been deployed yet."
+        },
+        "network": {
+          "type": "string"
+        },
+        "rpcUrl": {
+          "type": "string"
+        },
+        "networkPassphrase": {
+          "type": "string"
+        },
+        "wasmHash": {
+          "type": "string"
+        },
+        "source": {
+          "type": "string",
+          "description": "Script, workflow, release, or operator action that produced this entry."
+        },
+        "deployedAt": {
+          "type": ["string", "null"],
+          "format": "date-time"
+        }
+      }
+    }
+  }
+}

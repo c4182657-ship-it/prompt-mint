@@ -3,6 +3,10 @@
  *
  * Provides safe, locale-aware formatting for XLM, USD, percentages,
  * compact numbers, and general numeric values with complete edge-case handling.
+ *
+ * All XLM/stroop display uses Intl.NumberFormat so the output respects the
+ * active browser locale. Pass an explicit `locale` option to pin the locale
+ * (useful in tests or SSR contexts where navigator.language is unavailable).
  */
 
 export interface FormatCurrencyOptions {
@@ -10,15 +14,21 @@ export interface FormatCurrencyOptions {
   showSymbol?: boolean;
   fallback?: string;
   inputUnit?: "stroops" | "xlm";
+  /** BCP 47 locale tag, e.g. "en-US", "de-DE". Defaults to the runtime locale. */
+  locale?: string;
 }
 
 export interface FormatNumberOptions extends Intl.NumberFormatOptions {
   fallback?: string;
+  /** BCP 47 locale tag. Defaults to the runtime locale. */
+  locale?: string;
 }
 
 export interface FormatCompactOptions {
   decimals?: number;
   fallback?: string;
+  /** BCP 47 locale tag. Defaults to the runtime locale. */
+  locale?: string;
 }
 
 const STROOPS_PER_XLM = 10_000_000n;
@@ -27,7 +37,7 @@ const STROOPS_PER_XLM = 10_000_000n;
  * Safely converts string, number, or bigint to a number or bigint value.
  */
 function parseNumericValue(
-  value: number | bigint | string | null | undefined
+  value: number | bigint | string | null | undefined,
 ): { num: number | null; isBigInt: boolean; rawBigInt?: bigint } {
   if (value === null || value === undefined || value === "") {
     return { num: null, isBigInt: false };
@@ -65,7 +75,7 @@ function parseNumericValue(
  * Converts stroops (bigint/number/string) to XLM number
  */
 export function stroopsToXlmNumber(
-  stroops: bigint | number | string | null | undefined
+  stroops: bigint | number | string | null | undefined,
 ): number | null {
   if (stroops === null || stroops === undefined || stroops === "") {
     return null;
@@ -86,9 +96,15 @@ export function stroopsToXlmNumber(
 export function formatCurrency(
   amount: number | bigint | string | null | undefined,
   currency = "XLM",
-  options: FormatCurrencyOptions = {}
+  options: FormatCurrencyOptions = {},
 ): string {
-  const { decimals = 2, showSymbol = true, fallback = "-", inputUnit } = options;
+  const {
+    decimals = 2,
+    showSymbol = true,
+    fallback = "-",
+    inputUnit,
+    locale,
+  } = options;
 
   if (currency.toUpperCase() === "XLM") {
     let xlmVal: number | null = null;
@@ -101,10 +117,14 @@ export function formatCurrency(
 
     if (xlmVal === null || isNaN(xlmVal)) return fallback;
 
-    const formatted = xlmVal.toLocaleString("en-US", {
+    // Use Intl.NumberFormat so decimal/grouping separators respect the active
+    // browser locale (e.g. "1.234,56" in de-DE vs "1,234.56" in en-US).
+    // `locale` is undefined by default, which lets the runtime pick the locale
+    // from navigator.language — matching how the rest of the UI is localised.
+    const formatted = new Intl.NumberFormat(locale, {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
-    });
+    }).format(xlmVal);
 
     return showSymbol ? `${formatted} XLM` : formatted;
   }
@@ -114,7 +134,7 @@ export function formatCurrency(
   if (parsed.num === null || isNaN(parsed.num)) return fallback;
 
   try {
-    const formatter = new Intl.NumberFormat("en-US", {
+    const formatter = new Intl.NumberFormat(locale, {
       style: showSymbol ? "currency" : "decimal",
       currency: currency.toUpperCase(),
       minimumFractionDigits: decimals,
@@ -122,10 +142,10 @@ export function formatCurrency(
     });
     return formatter.format(parsed.num);
   } catch {
-    const formatted = parsed.num.toLocaleString("en-US", {
+    const formatted = new Intl.NumberFormat(locale, {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals,
-    });
+    }).format(parsed.num);
     return showSymbol ? `${currency.toUpperCase()} ${formatted}` : formatted;
   }
 }
@@ -135,9 +155,14 @@ export function formatCurrency(
  */
 export function formatPriceLabel(
   stroopsOrXlm: bigint | number | string | null | undefined,
-  unit: "stroops" | "xlm" = "stroops"
+  unit: "stroops" | "xlm" = "stroops",
+  locale?: string,
 ): string {
-  if (stroopsOrXlm === null || stroopsOrXlm === undefined || stroopsOrXlm === "") {
+  if (
+    stroopsOrXlm === null ||
+    stroopsOrXlm === undefined ||
+    stroopsOrXlm === ""
+  ) {
     return "-";
   }
 
@@ -151,10 +176,10 @@ export function formatPriceLabel(
 
   if (xlmValue === null || isNaN(xlmValue)) return "-";
 
-  return xlmValue.toLocaleString("en-US", {
+  return new Intl.NumberFormat(locale, {
     minimumFractionDigits: 2,
     maximumFractionDigits: 7,
-  });
+  }).format(xlmValue);
 }
 
 /**
@@ -162,7 +187,11 @@ export function formatPriceLabel(
  */
 export function formatXLM(
   amount: bigint | number | string | null | undefined,
-  options: { showUnit?: boolean; decimals?: number; inputUnit?: "stroops" | "xlm" } = {}
+  options: {
+    showUnit?: boolean;
+    decimals?: number;
+    inputUnit?: "stroops" | "xlm";
+  } = {},
 ): string {
   const { showUnit = true, decimals = 2, inputUnit = "stroops" } = options;
   return formatCurrency(amount, "XLM", {
@@ -177,7 +206,7 @@ export function formatXLM(
  */
 export function formatUSD(
   amount: number | string | null | undefined,
-  options: { showSymbol?: boolean; decimals?: number } = {}
+  options: { showSymbol?: boolean; decimals?: number } = {},
 ): string {
   const { showSymbol = true, decimals = 2 } = options;
   return formatCurrency(amount, "USD", {
@@ -191,14 +220,14 @@ export function formatUSD(
  */
 export function formatNumber(
   value: number | bigint | string | null | undefined,
-  options: FormatNumberOptions = {}
+  options: FormatNumberOptions = {},
 ): string {
-  const { fallback = "-", ...intlOptions } = options;
+  const { fallback = "-", locale, ...intlOptions } = options;
   const parsed = parseNumericValue(value);
   if (parsed.num === null || isNaN(parsed.num)) return fallback;
 
   try {
-    return new Intl.NumberFormat("en-US", intlOptions).format(parsed.num);
+    return new Intl.NumberFormat(locale, intlOptions).format(parsed.num);
   } catch {
     return parsed.num.toString();
   }
@@ -209,14 +238,14 @@ export function formatNumber(
  */
 export function formatCompactNumber(
   value: number | bigint | string | null | undefined,
-  options: FormatCompactOptions = {}
+  options: FormatCompactOptions = {},
 ): string {
-  const { decimals = 1, fallback = "-" } = options;
+  const { decimals = 1, fallback = "-", locale } = options;
   const parsed = parseNumericValue(value);
   if (parsed.num === null || isNaN(parsed.num)) return fallback;
 
   try {
-    return new Intl.NumberFormat("en-US", {
+    return new Intl.NumberFormat(locale, {
       notation: "compact",
       compactDisplay: "short",
       maximumFractionDigits: decimals,
@@ -232,7 +261,7 @@ export function formatCompactNumber(
 export function formatPercent(
   value: number | string | null | undefined,
   decimals = 2,
-  options: { fallback?: string; isDecimalRatio?: boolean } = {}
+  options: { fallback?: string; isDecimalRatio?: boolean } = {},
 ): string {
   const { fallback = "-", isDecimalRatio = false } = options;
   const parsed = parseNumericValue(value);

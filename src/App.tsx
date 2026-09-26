@@ -22,6 +22,7 @@ const TransactionHistoryPage = lazy(() => import("./pages/history/page.tsx"));
 const FavoritesPage = lazy(() => import("./pages/favorites/page.tsx"));
 const CollectionDetailPage = lazy(() => import("./pages/collections/page.tsx"));
 const CreatorAnalyticsPage = lazy(() => import("./pages/analytics/page.tsx"));
+const SandboxPage = lazy(() => import("./pages/sandbox/page.tsx"));
 
 /** Fade + slide transition applied to the active route on navigation. */
 const PageTransition = () => {
@@ -129,6 +130,14 @@ function ApplicationShell() {
             element={
               <SuspenseRoute routeName="Status">
                 <StatusPage />
+              </SuspenseRoute>
+            }
+          />
+          <Route
+            path="/sandbox"
+            element={
+              <SuspenseRoute routeName="Developer Sandbox">
+                <SandboxPage />
               </SuspenseRoute>
             }
           />

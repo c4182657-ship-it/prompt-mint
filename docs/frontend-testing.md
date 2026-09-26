@@ -28,7 +28,7 @@ Prefer real user journeys at the component or page-flow level:
 ## Recommended Pattern
 
 1. Render the real flow component with [`src/test/render.tsx`](../src/test/render.tsx).
-2. Reuse realistic prompt fixtures from [`src/test/fixtures/prompts.ts`](../src/test/fixtures/prompts.ts).
+2. Reuse realistic prompt fixtures from [`src/test/fixtures/prompts.ts`](../src/test/fixtures/prompts.ts) (`makePrompt`, `makePromptList`, `resetPromptSequence`).
 3. Mock wallet, Soroban client, encryption, unlock, and buyer-library API boundaries at the edge:
    - `@/util/wallet`
    - `@/lib/stellar/promptHashClient`

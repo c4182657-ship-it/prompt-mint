@@ -9,19 +9,28 @@ import { randomBytes, createHash, timingSafeEqual } from "crypto";
  * `adminAuth` service pattern in this codebase.
  */
 
-export type ApiScope = "read" | "write" | "admin";
+export type ApiScope =
+  | "read"
+  | "write"
+  | "admin"
+  | "prompts:read"
+  | "prompts:write"
+  | "licenses:read"
+  | "licenses:write"
+  | "webhooks:manage"
+  | "analytics:read";
 
-export const API_SCOPES: readonly ApiScope[] = ["read", "write", "admin"];
-
-/**
- * Scope hierarchy: a higher scope implies the ones below it.
- * admin > write > read.
- */
-const SCOPE_RANK: Record<ApiScope, number> = {
-  read: 1,
-  write: 2,
-  admin: 3,
-};
+export const API_SCOPES: readonly ApiScope[] = [
+  "read",
+  "write",
+  "admin",
+  "prompts:read",
+  "prompts:write",
+  "licenses:read",
+  "licenses:write",
+  "webhooks:manage",
+  "analytics:read",
+];
 
 export type RateLimitTier = "free" | "pro" | "enterprise";
 
@@ -92,16 +101,30 @@ export function maskKey(prefix: string): string {
   return `${KEY_PREFIX}_${prefix}_${"•".repeat(8)}`;
 }
 
-/**
- * Returns true when `granted` scopes satisfy the `required` scope, honouring
- * the admin > write > read hierarchy.
- */
 export function hasScope(
   granted: readonly ApiScope[],
   required: ApiScope,
 ): boolean {
-  const requiredRank = SCOPE_RANK[required];
-  return granted.some((scope) => SCOPE_RANK[scope] >= requiredRank);
+  if (granted.includes("admin")) return true;
+  if (granted.includes(required)) return true;
+
+  // Legacy/hierarchical mapping:
+  if (required === "read") {
+    return granted.some((s) => s === "read" || s === "write" || s.endsWith(":read"));
+  }
+  if (required === "write") {
+    return granted.some((s) => s === "write" || s.endsWith(":write"));
+  }
+
+  // Broad granted scopes imply specific ones:
+  if (granted.includes("write") && (required === "prompts:write" || required === "licenses:write")) {
+    return true;
+  }
+  if ((granted.includes("read") || granted.includes("write")) && (required === "prompts:read" || required === "licenses:read" || required === "analytics:read")) {
+    return true;
+  }
+
+  return false;
 }
 
 export const API_KEY_MAX_AGE_DAYS = 90;

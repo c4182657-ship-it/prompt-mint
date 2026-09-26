@@ -1,6 +1,6 @@
 # Automated rollback on CI failure
 
-This runbook covers the automation for GitHub issue *#236*: detect a failed production deploy, revert to the last known-good version, notify Slack/Discord, and open an incident ticket.
+This runbook covers the automation for GitHub issue _#236_: detect a failed production deploy, revert to the last known-good version, notify Slack/Discord, and open an incident ticket.
 
 ## What triggers a rollback
 
@@ -25,14 +25,14 @@ If no distinct READY production deployment exists, the workflow still notifies a
 
 Configure these repository secrets (missing Vercel/GitHub credentials force dry-run):
 
-| Secret | Purpose |
-| --- | --- |
-| `VERCEL_TOKEN` | Instant rollback + list production deployments |
-| `VERCEL_ORG_ID` | Vercel team id (`x-vercel-team-id`) |
-| `VERCEL_PROJECT_ID` | Target project |
-| `SLACK_WEBHOOK_URL` | Incident notification |
-| `DISCORD_WEBHOOK_URL` | Incident notification |
-| `GITHUB_TOKEN` | Provided automatically; needs `issues: write` |
+| Secret                | Purpose                                        |
+| --------------------- | ---------------------------------------------- |
+| `VERCEL_TOKEN`        | Instant rollback + list production deployments |
+| `VERCEL_ORG_ID`       | Vercel team id (`x-vercel-team-id`)            |
+| `VERCEL_PROJECT_ID`   | Target project                                 |
+| `SLACK_WEBHOOK_URL`   | Incident notification                          |
+| `DISCORD_WEBHOOK_URL` | Incident notification                          |
+| `GITHUB_TOKEN`        | Provided automatically; needs `issues: write`  |
 
 ## Manual dry-run
 
@@ -47,21 +47,27 @@ Or dispatch the workflow with **dry_run** enabled.
 When a production deploy fails, the rollback automation uses Vercel's deployment status. To investigate the root cause:
 
 1. **List recent deployments** to identify the failed deployment ID:
+
    ```bash
    vercel ls --prod
    ```
+
    Or use the dashboard: https://vercel.com/dashboard → select project ↔ **Deployments**.
 
 2. **Inspect build logs** for the failed deployment. CLI:
+
    ```bash
    vercel logs <deployment-id>
    ```
+
    In the dashboard, open the deployment and choose **Build Logs**. Look for the first error (often TypeScript, Babel, or dependency errors).
 
 3. **Check runtime logs** if the deployment built but failed health checks:
+
    ```bash
    vercel logs <deployment-id> --json
    ```
+
    Search for `unhandled rejection`, `error`, `ECONNREFUSED`, or timeout messages.
 
 4. **Cross-reference environment variables** (required secrets above) to ensure the Vercel project has the same values as CI.
@@ -75,3 +81,20 @@ Keep the logs with the incident ticket for later analysis.
 3. Follow [deployment-runbook.md](./deployment-runbook.md) if the contract or Redis/Mongo also need attention.
 
 Contract WASM is **not** auto-rolled back. Use the two-step upgrade path in the deployment runbook for on-chain logic.
+
+## Contract state inspection after a rollback
+
+Once the frontend is serving the last known-good artifact, verify on-chain state with the built-in inspector:
+
+```bash
+# Confirm contract config, pause status, and schema version
+yarn inspect:contract config --network testnet
+
+# Spot-check a specific prompt if a purchase flow was affected
+yarn inspect:contract prompt --prompt-id 0 --network testnet
+
+# Full snapshot saved to disk for incident archiving
+yarn inspect:contract full --json > incident-snapshot-$(date +%s).json
+```
+
+See `scripts/inspect-contract.ts` and `scripts/README.md` for the full command reference.

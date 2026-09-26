@@ -38,7 +38,31 @@ export ADMIN_ALIAS=admin_mainnet
 Execute the upgrade script from the repository root:
 ```bash
 ./scripts/upgrade.sh
+# Or simulate first (no transactions):
+./scripts/upgrade.sh --dry-run
+# Or via the Node dry-run directly:
+node scripts/upgrade-dry-run.mjs --network testnet --contract-id C... --wasm target/wasm32-unknown-unknown/release/prompt_hash.optimized.wasm --json
 ```
+
+### Dry-run (no chain writes)
+
+Both entry points delegate to `scripts/upgrade-dry-run.mjs`, which never submits a transaction. It:
+
+1. Builds and optimizes the Wasm (unless `--skip-build`).
+2. Hashes the output (`SHA-256`) and validates it is non-zero and well-formed.
+3. Probes the live contract via RPC (`get_all_prompts`, `get_schema_version`, `is_paused`) to run the same storage/license integrity gates that `confirm_upgrade` performs on-chain.
+4. Prints a human-readable plan (or `--json` for CI) and exits `0` when the plan looks safe, `1` otherwise.
+
+```bash
+# Full build + probe
+./scripts/upgrade.sh --dry-run
+
+# Reuse existing Wasm, JSON output for CI
+node scripts/upgrade-dry-run.mjs --skip-build --network testnet --json
+yarn upgrade:dry-run -- --skip-build --json
+```
+
+The dry-run intentionally does not call `stellar contract install` or `propose_upgrade`/`confirm_upgrade`. Promote to a real upgrade only after the dry-run reports `PASS`. See `scripts/upgrade-dry-run.mjs` (`yarn test:frontend` covers its argument parsing and hash validation).
 
 ### What the script does under the hood:
 1. **Builds the Contract:** Compiles the rust source code and outputs it to `target/wasm32-unknown-unknown/release/prompt_hash.wasm`.

@@ -159,11 +159,30 @@ PROMPTS_COUNT=$(stellar contract invoke \
     get_all_prompts)
 
 echo "Current prompts count: $PROMPTS_COUNT"
+
+# Deploy manifest (hashes + addresses). See docs/deploy-manifest.md.
+echo ""
+echo "🧾 Writing deploy manifest..."
+MANIFEST_PATH=${MANIFEST_PATH:-"deployments/$NETWORK.json"}
+node scripts/deploy-manifest.mjs generate \
+    --network "$NETWORK" \
+    --passphrase "$NETWORK_PASSPHRASE" \
+    --rpc-url "$RPC_URL" \
+    --contract-id "$CONTRACT_ID" \
+    --wasm "$WASM_PATH" \
+    --admin "$ADMIN_ADDRESS" \
+    --admin-two "$ADMIN_TWO_ADDRESS" \
+    --admin-three "$ADMIN_THREE_ADDRESS" \
+    --fee-wallet "$FEE_WALLET_ADDRESS" \
+    --xlm-sac "$XLM_SAC" \
+    --out "$MANIFEST_PATH"
+
 echo "--------------------------------------------------------"
 echo "Deployment successful!"
 echo "Contract ID: $CONTRACT_ID"
 echo "Admin: $ADMIN_ADDRESS"
 echo "Admin 2: $ADMIN_TWO_ADDRESS"
 echo "Admin 3: $ADMIN_THREE_ADDRESS"
+echo "Manifest: $MANIFEST_PATH"
 echo "--------------------------------------------------------"
 

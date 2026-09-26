@@ -1,0 +1,24 @@
+{
+  "name": "@prompt-mint/contract-event-consumer-example",
+  "version": "1.0.0",
+  "description": "Production-ready Soroban contract event consumer example for Prompt Mint",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "start": "tsx src/index.ts",
+    "build": "tsc",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@stellar/stellar-sdk": "^14.6.1",
+    "dotenv": "^16.4.5"
+  },
+  "devDependencies": {
+    "@types/node": "^24.10.0",
+    "tsx": "^4.19.0",
+    "typescript": "~5.7.0",
+    "vitest": "^4.1.0"
+  },
+  "license": "Apache-2.0"
+}

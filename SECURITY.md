@@ -4,6 +4,8 @@
 
 Please reach out to the team using GitHub's own security mechanism to submit an anonymous report.
 
+See [docs/security/vulnerability-disclosure.md](docs/security/vulnerability-disclosure.md) for the full playbook: what to include, severity and remediation SLAs, triage steps, safe harbor, and the 90-day responsible-disclosure window.
+
 ## Related Documentation
 
 - [Penetration testing schedule and methodology](docs/security/penetration-testing.md) — cadence, scope, and remediation SLAs for our recurring security testing program.

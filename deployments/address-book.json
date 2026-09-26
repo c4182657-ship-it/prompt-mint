@@ -1,0 +1,36 @@
+{
+  "$schema": "./address-book.schema.json",
+  "schemaVersion": 1,
+  "updatedAt": "2026-09-24T00:00:00.000Z",
+  "contracts": {
+    "prompt_hash": {
+      "local": {
+        "contractId": "C3F4A7D90B6E2C18F43A7D90B6E2C18F43A7D90B6E2C18F43A7D90",
+        "network": "standalone",
+        "rpcUrl": "http://localhost:8000/soroban/rpc",
+        "networkPassphrase": "Standalone Network ; February 2017",
+        "wasmHash": "mock-local-wasm-hash",
+        "source": "scripts/frontend-mock-deploy.mjs",
+        "deployedAt": "2026-09-24T00:00:00.000Z"
+      },
+      "testnet": {
+        "contractId": "",
+        "network": "testnet",
+        "rpcUrl": "https://soroban-testnet.stellar.org",
+        "networkPassphrase": "Test SDF Network ; September 2015",
+        "wasmHash": "",
+        "source": "manual",
+        "deployedAt": null
+      },
+      "mainnet": {
+        "contractId": "",
+        "network": "mainnet",
+        "rpcUrl": "https://mainnet.sorobanrpc.com",
+        "networkPassphrase": "Public Global Stellar Network ; September 2015",
+        "wasmHash": "",
+        "source": "manual",
+        "deployedAt": null
+      }
+    }
+  }
+}

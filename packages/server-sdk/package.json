@@ -1,0 +1,46 @@
+{
+  "name": "@prompthash/server-sdk",
+  "version": "0.1.0",
+  "description": "Server-side TypeScript SDK for the Prompt Mint API: API-key auth, idempotent writes, typed error codes, retries, and webhook verification.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "sideEffects": false,
+  "engines": {
+    "node": ">=18"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0",
+    "vitest": "^2.1.0"
+  },
+  "keywords": [
+    "prompthash",
+    "promptmint",
+    "stellar",
+    "soroban",
+    "sdk",
+    "webhooks",
+    "idempotency"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PromptMintLabs/prompt-mint",
+    "directory": "packages/server-sdk"
+  }
+}

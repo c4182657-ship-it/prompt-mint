@@ -42,6 +42,8 @@ Express JSON bodies are limited to `300kb`; serverless bodies are limited to `10
 
 ## Error codes
 
+Full per-code table — including retry guidance, the Express `AppError` codes, appeal and API-key errors, and the exact envelope shapes — is in the [SDK error-code reference card](./sdk-error-codes.md). That card is verified against `src/lib/api/errorCodes.ts` by `src/test/docs/sdkErrorCodes.test.ts`.
+
 | HTTP | Code/condition | Meaning |
 |---:|---|---|
 | 400 | `MISSING_FIELDS`, `INVALID_INPUT`, `UNSUPPORTED_VERSION` | Invalid shape, missing data, or unsupported API version |
@@ -220,3 +222,8 @@ Analytics accepts only known taxonomy events, rejects raw wallet addresses,
 and has a 20kb body limit. Image validation accepts HTTP(S) URLs only and
 allows JPEG, PNG, WebP, and GIF files up to 5MB. Moderator actions accept 1-50
 actions and may return `207` when some actions fail.
+
+For external developers integrating against these endpoints, see the
+[Public API Survival Guide](./public-api-survival-guide.md) for rate-limit
+handling, error recovery patterns, unlock flow gotchas, and the testnet
+checklist.

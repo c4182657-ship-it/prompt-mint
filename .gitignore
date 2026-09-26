@@ -63,10 +63,18 @@ Thumbs.db
 .codex
 .claude/
 
+# Local-network deploy manifests (testnet manifests are committed)
+deployments/local.json
+
 # Generated contract clients
 packages/*
 !packages/.gitkeep
 !src/contracts/util.ts
+# Hand-written server SDKs live under packages/ too — keep their sources tracked
+!packages/server-sdk/
+!packages/server-sdk-python/
+!packages/server-sdk-go/
+!packages/server-sdk-rust/
 .omx/
 
 # Load-test secrets and generated results

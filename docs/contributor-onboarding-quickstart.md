@@ -4,6 +4,23 @@ Welcome to PromptMint! This guide provides an end-to-end, friction-free onboardi
 
 ---
 
+## 0. Fastest Path: Bootstrap Script
+
+Once Node.js 22+ is installed, one command handles the rest of the local setup:
+
+```bash
+git clone https://github.com/PromptMintLabs/prompt-mint.git
+cd prompt-mint
+node scripts/bootstrap.mjs --dry-run   # preview the plan
+node scripts/bootstrap.mjs             # enable Corepack, install deps, create .env, validate
+```
+
+The script can be re-run safely and never overwrites an existing `.env`. After it finishes, fill in the placeholder values in `.env` and continue with [Section 2](#2-stellar-testnet-wallet-setup) to set up your wallet. Sections 1 and 4 describe the manual equivalent of the bootstrap.
+
+For a map of which directory owns what, see the [Monorepo Map](./monorepo-map.md).
+
+---
+
 ## 1. Prerequisites & Environment Setup
 
 Ensure you have the following installed on your development machine:

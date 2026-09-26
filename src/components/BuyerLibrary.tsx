@@ -401,27 +401,3 @@ export function BuyerLibrary() {
     </Fragment>
   );
 }
-                      Unlock Service Unavailable — Reconnect to verify on - chain license
-                    </div >
-                  )}
-                </div >
-
-{
-  prompts.map((prompt) => {
-    const id = prompt.id.toString();
-    return (
-      <PromptLibraryCard
-        key={id}
-        prompt={prompt}
-        plaintext={unlocked[id]}
-        integrity={integrityMap[id]}
-        unlockState={unlockStates[id] ?? "idle"}
-        isBusy={busyId === id}
-        onUnlock={() => void handleUnlock(prompt)}
-      />
-    );
-  })
-}
-              </div >
-              );
-}

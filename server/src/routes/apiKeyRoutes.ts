@@ -4,6 +4,7 @@ import {
   ListApiKeys,
   RevokeApiKey,
   RotateApiKey,
+  UpdateApiKeyScopes,
 } from "../controllers/apiKeyController";
 
 /**
@@ -16,4 +17,5 @@ export const apiKeyRouter = express.Router();
 
 apiKeyRouter.route("/").get(ListApiKeys).post(CreateApiKey);
 apiKeyRouter.route("/:id/rotate").post(RotateApiKey);
+apiKeyRouter.route("/:id/scopes").patch(UpdateApiKeyScopes);
 apiKeyRouter.route("/:id").delete(RevokeApiKey);

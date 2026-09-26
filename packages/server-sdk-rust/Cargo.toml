@@ -1,0 +1,31 @@
+[package]
+name = "prompthash-server-sdk"
+version = "0.1.0"
+edition = "2021"
+description = "Server-side Rust SDK for the Prompt Mint API: API-key auth, idempotent writes, typed error codes, retries, and webhook verification."
+license = "Apache-2.0"
+repository = "https://github.com/PromptMintLabs/prompt-mint"
+keywords = ["prompthash", "promptmint", "stellar", "soroban", "sdk", "webhooks", "idempotency"]
+categories = ["api-bindings", "web-programming"]
+readme = "README.md"
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+hmac = "0.12"
+sha2 = "0.10"
+hex = "0.4"
+subtle = "2"
+thiserror = "2"
+ureq = { version = "2", features = ["json"] }
+url = "2"
+rand = "0.8"
+base64 = "0.22"
+chrono = "0.4"
+
+[dev-dependencies]
+serde_json = "1"
+
+[lib]
+name = "prompthash_server_sdk"
+path = "src/lib.rs"

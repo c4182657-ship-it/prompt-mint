@@ -1,10 +1,22 @@
 import type { PromptRecord } from "@/lib/stellar/promptHashClient";
 
+let promptSequence = 1n;
+
+/**
+ * Resets the auto-incrementing prompt id sequence used by {@link makePrompt}
+ * when no explicit `id` override is given. Call in `beforeEach` for isolation.
+ */
+export function resetPromptSequence(nextId: bigint = 1n): void {
+  promptSequence = nextId;
+}
+
 export function makePrompt(
   overrides: Partial<PromptRecord> = {},
 ): PromptRecord {
+  const { id, ...rest } = overrides;
+  const nextId = id ?? promptSequence++;
   return {
-    id: 1n,
+    id: nextId,
     creator: "GCREATORACCOUNT1234567890ABCDEFGH1234567890ABCDEFGH1234567890",
     imageUrl: "https://example.com/prompt.png",
     title: "Board-ready launch plan",
@@ -19,6 +31,21 @@ export function makePrompt(
     priceStroops: 2_5000000n,
     active: true,
     salesCount: 4,
-    ...overrides,
+    ...rest,
   };
+}
+
+/**
+ * Builds a batch of distinct prompt fixture records with sequential ids
+ * unless an explicit `id` is supplied per item.
+ */
+export function makePromptList(
+  count: number,
+  overrides: Partial<PromptRecord> | ((index: number) => Partial<PromptRecord>) = {},
+): PromptRecord[] {
+  return Array.from({ length: count }, (_, index) => {
+    const itemOverrides =
+      typeof overrides === "function" ? overrides(index) : overrides;
+    return makePrompt(itemOverrides);
+  });
 }

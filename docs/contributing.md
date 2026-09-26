@@ -81,7 +81,7 @@ The Dev Container intentionally matches CI:
 
 | Tool          | Dev Container version | CI version (source)                         |
 | ------------- | --------------------- | ------------------------------------------- |
-| Node.js       | 22 (via NodeSource)   | 22 (via `actions/setup-node@v4`)            |
+| Node.js       | 22 (via NodeSource)   | 22 (via `actions/setup-node@v7`)            |
 | Yarn          | 4.9.2 (via Corepack)  | 4.9.2 (via `corepack prepare`)              |
 | Rust          | 1.89.0 (via rustup)   | 1.89.0 (via `dtolnay/rust-toolchain@stable`)|
 | wasm target   | wasm32v1-none         | wasm32v1-none                                |
@@ -103,6 +103,21 @@ Install these tools before running the project locally:
 You can run `yarn check:setup` after installing dependencies to validate local tools and required environment variables without printing secret values.
 
 ## Install dependencies
+
+### One-command bootstrap
+
+From the repository root, run:
+
+```bash
+node scripts/bootstrap.mjs            # or: yarn bootstrap
+node scripts/bootstrap.mjs --dry-run  # print the plan without changing anything
+```
+
+The bootstrap enables Corepack when Yarn 4 is missing, runs `yarn install` and `npm ci` in `server/`, and copies `.env.example` to `.env` only if `.env` does not exist yet. It also adds the `wasm32-unknown-unknown` Rust target when `rustup` is present, then finishes with `yarn check:setup --warn-only`. It never installs Node, Rust, or the Stellar CLI for you. When one is missing, it prints the install command. You can re-run it at any time.
+
+Flags: `--skip-server`, `--skip-rust` (frontend-only contributors), `--skip-env`.
+
+### Manual install
 
 From the repository root:
 

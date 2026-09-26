@@ -82,5 +82,13 @@
   },
   "language": {
     "select": "Langue"
+  },
+  "number_format": {
+    "xlm_unit": "XLM",
+    "stroop_unit": "stroop",
+    "stroop_unit_plural": "stroops",
+    "stroops_per_xlm": "1 XLM = 10 000 000 stroops",
+    "price_label": "{{amount}} XLM",
+    "price_label_usd": "{{amount}} USD"
   }
 }
